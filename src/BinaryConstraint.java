@@ -3,7 +3,7 @@ import java.util.* ;
 public final class BinaryConstraint {
   private int firstVar, secondVar ;
   private ArrayList<BinaryTuple> tuples ;
-  
+
   public BinaryConstraint(int fv, int sv, ArrayList<BinaryTuple> t) {
     firstVar = fv ;
     secondVar = sv ;
@@ -37,6 +37,26 @@ public final class BinaryConstraint {
             }
         }
         return false;
+    }
+
+    public Set<Integer> obtainMirrorDomain(int domainVar, Set<Integer> domain){
+
+        Set<Integer> returnSet = new TreeSet<>();
+        if(firstVar ==domainVar){
+            for (BinaryTuple tuple: tuples) {
+                if(domain.contains(tuple.getVal1())){
+                    returnSet.add(tuple.getVal2());
+                }
+            }
+        } else {
+            for (BinaryTuple tuple: tuples) {
+                if(domain.contains(tuple.getVal2())){
+                    returnSet.add(tuple.getVal1());
+                }
+            }
+        }
+
+        return returnSet;
     }
 
     public boolean appliesToVars(int var, int futureVar){

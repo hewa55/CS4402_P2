@@ -25,6 +25,7 @@ public final class BinaryCSPReader {
 	//System.out.println(reader.readBinaryCSP(args[0])) ;
   }
 
+
   /**
    * File format:
    * <no. vars>
