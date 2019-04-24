@@ -3,6 +3,8 @@ import java.util.*;
 public class ForwardChecker {
     private List<Assignment> assignments = new ArrayList<>();
     private Set<Integer> assignedVars = new HashSet<>();
+    private  int counter = 0;
+
 
     public List<Assignment> getAssignments() {
         return assignments;
@@ -11,31 +13,23 @@ public class ForwardChecker {
 
 
     public void checkForward(BinaryCSP binaryCSP){
-        if(binaryCSP.getNoVariables()==0){
-            //      print solution --> return
-            // TODO print solution
-            return;
-        }
-
+        // generate the domains for each variable,
+        // var 0 corresponds to List.get(0) etc
         List<SortedSet<Integer>> domains = generateDomains(binaryCSP);
 
         checkForwardRecursion(binaryCSP,domains);
     }
 
-    // IDEA make create a map of a map. The first map points takes the variable names in the arc as key and returns the
-    // the second map, in which the domain
-    // TODO figure out how the arc situation can be improved, the current solution is shit.
-
-
 
     public void checkForwardRecursion(BinaryCSP binaryCSP, List<SortedSet<Integer>> domains){
+        counter++;
+        System.out.println(counter);
         if(binaryCSP.getNoVariables()==assignedVars.size()){
-            //      print solution --> return
-            // TODO print solution
             for (Assignment asg:assignments) {
                 System.out.println(asg.getVar() +"="+asg.getVal());
             }
-            return;
+            // exit system once one solution was found
+            System.exit(0);
         }
 
         int var = selectVar(domains);
@@ -45,6 +39,7 @@ public class ForwardChecker {
     }
 
     private List<SortedSet<Integer>> cloneDomain(List<SortedSet<Integer>> domains){
+        // create a deep copy for the domain for roll backs
         List<SortedSet<Integer>> copy = new ArrayList<>();
         for (int i = 0; i < domains.size(); i++) {
             copy.add(i, new TreeSet<>());
@@ -57,6 +52,7 @@ public class ForwardChecker {
     }
 
     private List<SortedSet<Integer>> generateDomains(BinaryCSP binaryCSP){
+        // generate the domains
         List<SortedSet<Integer>> domains = new ArrayList<>();
 
         for (int i = 0; i < binaryCSP.getNoVariables(); i++) {
@@ -72,29 +68,38 @@ public class ForwardChecker {
     }
 
     private void assign(int var, int val){
+        //assign the value
         assignments.add(new Assignment(var,val));
         assignedVars.add(var);
     }
     private void unassign(int var){
+        // remove the value from the assignment
         assignments.remove(assignments.size()-1);
         assignedVars.remove(var);
     }
 
     private void leftBranch(BinaryCSP binaryCSP,List<SortedSet<Integer>> domains, int var, int val){
-        // takes varList, var, val
+        // left branch of the 2 way tree
 
         assign(var,val);
+        // clone domains for roll back
         List<SortedSet<Integer>> domainsClone = cloneDomain(domains);
+
+        // only one value stays in the set of the current assignment
         SortedSet<Integer> remainingVal = new TreeSet<>();
         remainingVal.add(val);
+        // remove the other
         domains.get(var).retainAll(remainingVal);
+
+        // if there are no issues with empty domains, continue to the next level
         if(reviseFutureArcs2(binaryCSP,domains,var)){
             checkForwardRecursion(binaryCSP,domains);
         }
-        //domains = cloneDomain(domainsClone);
+        //and put the content of the clone back into the domain if it didnt work out
         for (int i = 0; i <domains.size() ; i++) {
             domains.set(i, domainsClone.get(i));
         }
+        // remove assignment
         unassign(var);
     }
 
@@ -114,39 +119,18 @@ public class ForwardChecker {
         }
         domains.get(var).add(val);
 
-        //      if reviseFutureArcs(varList, var):
-        //          checkForward(varList - var)
-        //      undoPruning
-
-        // restoreValue(var,val) -- WHY? reasoning: when the right branch fails, the whole thing fails
-    }
-
-    private List<SortedSet<Integer>> reviseFutureArcs(BinaryCSP binaryCSP, List<SortedSet<Integer>> domains, int assignedVar, int assignedVal){
-
-        // foreach futureVar in VarList where futureVar != var
-        for (int i = 0; i < domains.size() ; i++) {
-            if(assignedVars.contains(i)||i == assignedVar){
-                continue;
-            }
-            SortedSet<Integer> domain = revise(domains.get(i),binaryCSP.getConstraints(),i, assignedVar,assignedVal);
-            //      // Prunes Domain(D(futureVar))
-            if(domain.size()==0){
-                // domain of the future var has been pruned to 0
-                // last assignment wasn't good
-                return new ArrayList<>();
-            }
-            domains.set(i,domain);
-        }
-        // only return the domains if all domains still have size > 0
-        return domains;
     }
 
     private boolean reviseFutureArcs2(BinaryCSP binaryCSP, List<SortedSet<Integer>> domains, int assignedVar){
         boolean consistent = true;
+        // go through all possible vars
         for (int i = 0; i < domains.size(); i++) {
+            // skip the one already assigned or the recently (failed) assignemnt
             if(i==assignedVar || assignedVars.contains(i)){
                 continue;
             }
+
+            // check consistency and return respective value
             consistent = revise2(binaryCSP.getConstraints(),domains,i,assignedVar);
             if(!consistent){
                 return false;
@@ -157,40 +141,21 @@ public class ForwardChecker {
 
     private boolean revise2(List<BinaryConstraint> binaryConstraints, List<SortedSet<Integer>> domains, int futureVar, int assignedVar){
         SortedSet<Integer> revisedDomain = new TreeSet<>();
+
         for (int j = 0; j < binaryConstraints.size() ; j++) {
             if(binaryConstraints.get(j).appliesToVars(assignedVar,futureVar)){
+                //obtain the new domain for every value
                 revisedDomain.addAll(binaryConstraints.get(j).obtainMirrorDomain(assignedVar,domains.get(assignedVar)));
                 break;
             }
         }
+        // only keep the intersection of the previous domain with the revised domain
         revisedDomain.retainAll(domains.get(futureVar));
         if(revisedDomain.isEmpty()){
             return false;
         }
         domains.set(futureVar,revisedDomain);
         return true;
-    }
-
-    private SortedSet<Integer> revise(SortedSet<Integer> previousDomain, List<BinaryConstraint> binaryConstraints, int futureVar, int assignedVar, int assignedVal){
-        // obtain the current assignment from the assignment list
-        // go through the binary constraints and check all the allowed combinations of the domain with
-        // the assignment
-        //int assignedVar = assignments.get(assignments.size()-1).getVar();
-        //int assignedVal = assignments.get(assignments.size()-1).getVal();
-        SortedSet<Integer> revisedDomain = new TreeSet<>();
-        for (int j = 0; j < binaryConstraints.size() ; j++) {
-            // TODO should not have to iterate through all, should have a hashmap pointing to the right entry
-            if(binaryConstraints.get(j).appliesToVars(assignedVar,futureVar)){
-                Iterator<Integer> domainIterator = previousDomain.iterator();
-                while(domainIterator.hasNext()){
-                    Integer futureAssingment = domainIterator.next();
-                    if(binaryConstraints.get(j).combinationAllowed(futureVar,futureAssingment,assignedVar,assignedVal)){
-                        revisedDomain.add(futureAssingment);
-                    }
-                }
-            }
-        }
-        return revisedDomain;
     }
 
 

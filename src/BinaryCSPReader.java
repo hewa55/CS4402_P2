@@ -20,8 +20,11 @@ public final class BinaryCSPReader {
 
     BinaryCSPReader reader = new BinaryCSPReader() ;
     BinaryCSP csp = reader.readBinaryCSP(args[0]);
-    ForwardChecker fc = new ForwardChecker();
-    fc.checkForward(csp);
+    MAC mac = new MAC();
+    mac.checkMac(csp);
+    //BinaryCSP csp1 = reader.readBinaryCSP(args[0]);
+    //ForwardChecker fc = new ForwardChecker();
+    //fc.checkForward(csp1);
 	//System.out.println(reader.readBinaryCSP(args[0])) ;
   }
 

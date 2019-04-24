@@ -10,8 +10,10 @@ public final class BinaryConstraint {
     tuples = t ;
   }
 
+    public BinaryConstraint() {
+    }
 
-  public String toString() {
+    public String toString() {
     StringBuffer result = new StringBuffer() ;
     result.append("c("+firstVar+", "+secondVar+")\n") ;
     for (BinaryTuple bt : tuples)
@@ -20,6 +22,16 @@ public final class BinaryConstraint {
     }
   
   // SUGGESTION: You will want to add methods here to reason about the constraint
+
+    public int getFirstVar() {
+        return firstVar;
+    }
+
+    public int getSecondVar() {
+        return secondVar;
+    }
+
+
     public boolean combinationAllowed(int futureVar, int futureVarAssignment, int var, int varAssignment){
 
         int firstVal;
@@ -60,6 +72,6 @@ public final class BinaryConstraint {
     }
 
     public boolean appliesToVars(int var, int futureVar){
-      return (firstVar == var && secondVar==futureVar || firstVar==futureVar&&secondVar==var);
+      return ((firstVar == var && secondVar==futureVar) || (firstVar==futureVar&&secondVar==var));
     }
 }
