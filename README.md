@@ -9,3 +9,6 @@ MAC is an advanced pruning algorithm for clearing binary search trees. This impl
 
 # Input
 The input is done in the csp file format.
+The first line indicated the number of variables, followed by the domains of the variables.
+The next lines stated the contraints explicitly.
+See the csp files given to understand the format.
